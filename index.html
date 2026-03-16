@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neon Grid Defense</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="hud">
+      <div class="stats">
+        <span>Lives: <strong id="livesValue"></strong></span>
+        <span>Money: <strong id="moneyValue"></strong></span>
+        <span>Score: <strong id="scoreValue"></strong></span>
+        <span>Wave: <strong id="waveValue"></strong></span>
+      </div>
+      <div class="controls">
+        <button id="pulseBtn">Pulse Tower</button>
+        <button id="novaBtn">Nova Tower</button>
+        <button id="startWaveBtn">Start Wave</button>
+        <button id="restartBtn" class="hidden">Restart</button>
+      </div>
+      <div id="statusText" class="status"></div>
+    </header>
+
+    <main>
+      <canvas id="gameCanvas"></canvas>
+      <aside id="towerPanel" class="tower-panel hidden">
+        <h3>Selected Tower</h3>
+        <div id="towerInfo"></div>
+        <button id="upgradeBtn">Upgrade</button>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

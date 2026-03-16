@@ -1,0 +1,74 @@
+:root {
+  --bg: #050509;
+  --panel: #0a0a12;
+  --cyan: #2af6ff;
+  --magenta: #ff2ac9;
+  --lime: #7fff3a;
+  --purple: #9e5bff;
+  --text: #e8f7ff;
+  --danger: #ff577a;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Inter, Segoe UI, system-ui, sans-serif;
+  background: radial-gradient(circle at top, #0c1020 0%, var(--bg) 45%);
+  color: var(--text);
+}
+#app {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 14px;
+}
+.hud {
+  background: rgba(8, 12, 20, 0.92);
+  border: 1px solid rgba(42, 246, 255, 0.35);
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 0 18px rgba(42, 246, 255, 0.16);
+}
+.stats {
+  display: flex;
+  gap: 18px;
+  font-size: 15px;
+}
+.stats strong { color: var(--cyan); }
+.controls {
+  margin-top: 8px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+button {
+  background: #11172a;
+  color: var(--text);
+  border: 1px solid rgba(158, 91, 255, 0.6);
+  border-radius: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+button:hover { box-shadow: 0 0 14px rgba(158, 91, 255, 0.5); }
+button.selected { border-color: var(--lime); box-shadow: 0 0 10px rgba(127, 255, 58, 0.6); }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+.hidden { display: none; }
+
+main { margin-top: 12px; display: flex; gap: 12px; align-items: flex-start; }
+#gameCanvas {
+  background: #030307;
+  border: 1px solid rgba(42, 246, 255, 0.4);
+  border-radius: 8px;
+  box-shadow: 0 0 24px rgba(42, 246, 255, 0.18);
+}
+.tower-panel {
+  width: 220px;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 42, 201, 0.6);
+  background: rgba(16, 9, 22, 0.8);
+}
+.status {
+  margin-top: 8px;
+  min-height: 20px;
+  color: var(--magenta);
+}
