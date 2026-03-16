@@ -5,7 +5,8 @@ let enemyId = 1;
 export class Enemy {
   constructor(type, worldPath, multipliers) {
     const base = CONFIG.enemies[type];
-    this.id = enemyId += 1;
+    this.id = enemyId;
+    enemyId += 1;
     this.type = type;
     this.color = base.color;
     this.shape = base.shape;

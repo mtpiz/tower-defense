@@ -39,3 +39,12 @@ Primary balance knobs are in `src/config.js`:
 - `gameplay`: starting resources, lives, total waves.
 
 Wave pacing and enemy composition are in `src/waveManager.js` (`makeWave`).
+
+
+## Validation
+
+```bash
+node tests/validate.mjs
+```
+
+Runs lightweight deterministic checks for wave generation, placement phase rules, and path/buildable grid constraints.

@@ -5,7 +5,8 @@ let towerId = 0;
 
 export class Tower {
   constructor(type, cell, cellSize) {
-    this.id = towerId += 1;
+    this.id = towerId;
+    towerId += 1;
     this.type = type;
     this.cell = cell;
     this.x = cell.x * cellSize + cellSize / 2;

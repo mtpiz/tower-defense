@@ -4,7 +4,8 @@ let projectileId = 1;
 
 export class Projectile {
   constructor(tower, target) {
-    this.id = projectileId += 1;
+    this.id = projectileId;
+    projectileId += 1;
     this.towerType = tower.type;
     this.color = tower.template.color;
     this.damage = tower.stats.damage;
