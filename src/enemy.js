@@ -3,7 +3,7 @@ import { CONFIG } from './config.js';
 let enemyId = 1;
 
 export class Enemy {
-  constructor(type, worldPath, multipliers) {
+  constructor(type, multipliers, pathCells, worldPath, navVersion) {
     const base = CONFIG.enemies[type];
     this.id = enemyId;
     enemyId += 1;
@@ -15,6 +15,9 @@ export class Enemy {
     this.speed = base.speed * multipliers.speed;
     this.reward = Math.round(base.reward * multipliers.reward);
     this.score = Math.round(base.score * multipliers.reward);
+    this.pathCells = pathCells;
+    this.worldPath = worldPath;
+    this.navVersion = navVersion;
     this.x = worldPath[0].x;
     this.y = worldPath[0].y;
     this.pathIndex = 0;
@@ -23,13 +26,20 @@ export class Enemy {
     this.reachedExit = false;
   }
 
-  update(dt, worldPath) {
-    if (this.dead || this.reachedExit) return;
+  setPath(pathCells, worldPath, navVersion) {
+    this.pathCells = pathCells;
+    this.worldPath = worldPath;
+    this.navVersion = navVersion;
+    this.pathIndex = 0;
+    this.progress = 0;
+  }
+
+  update(dt) {
+    if (this.dead || this.reachedExit || !this.worldPath?.length) return;
     let remaining = this.speed * dt;
 
-    while (remaining > 0 && this.pathIndex < worldPath.length - 1) {
-      const from = worldPath[this.pathIndex];
-      const to = worldPath[this.pathIndex + 1];
+    while (remaining > 0 && this.pathIndex < this.worldPath.length - 1) {
+      const to = this.worldPath[this.pathIndex + 1];
       const dx = to.x - this.x;
       const dy = to.y - this.y;
       const dist = Math.hypot(dx, dy);
@@ -45,21 +55,15 @@ export class Enemy {
       this.y += (dy / dist) * step;
       remaining -= step;
 
-      if (step === dist) {
-        this.pathIndex += 1;
-      }
+      if (step === dist) this.pathIndex += 1;
       this.progress = this.pathIndex + (step / Math.max(dist, 0.001));
     }
 
-    if (this.pathIndex >= worldPath.length - 1) {
-      this.reachedExit = true;
-    }
+    if (this.pathIndex >= this.worldPath.length - 1) this.reachedExit = true;
   }
 
   applyDamage(amount) {
     this.hp -= amount;
-    if (this.hp <= 0) {
-      this.dead = true;
-    }
+    if (this.hp <= 0) this.dead = true;
   }
 }

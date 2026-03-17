@@ -1,10 +1,11 @@
 import { CONFIG } from './config.js';
-import { createGrid, CELL_TYPES } from './grid.js';
-import { buildWorldPath } from './pathModel.js';
+import { createGrid, CELL_TYPES, setCellType } from './grid.js';
+import { buildWorldPath, findPathCells } from './pathModel.js';
 import { Enemy } from './enemy.js';
 import { Tower } from './tower.js';
 import { Projectile } from './projectile.js';
 import { WaveManager } from './waveManager.js';
+import { keyForCell } from './utils.js';
 
 export const GAME_PHASE = {
   READY: 'ready',
@@ -21,11 +22,11 @@ export class GameState {
 
   reset() {
     this.grid = createGrid();
-    this.worldPath = buildWorldPath(this.grid.path, this.grid);
     this.waveManager = new WaveManager();
     this.phase = GAME_PHASE.READY;
     this.lives = CONFIG.gameplay.startingLives;
     this.money = CONFIG.gameplay.startingMoney;
+    this.blockTilesLeft = CONFIG.gameplay.startingBlockTiles;
     this.score = 0;
     this.towers = [];
     this.enemies = [];
@@ -33,11 +34,27 @@ export class GameState {
     this.effects = [];
     this.selectedTowerType = null;
     this.selectedTowerId = null;
+    this.buildMode = 'block';
     this.hoverCell = null;
+    this.navVersion = 0;
+    this.pathPreview = this.computePathPreview();
   }
 
-  setSelectedTowerType(type) {
-    this.selectedTowerType = type;
+  get blockedForPathing() {
+    const blocked = new Set(this.grid.blockedCells);
+    this.towers.forEach((tower) => blocked.add(keyForCell(tower.cell.x, tower.cell.y)));
+    return blocked;
+  }
+
+  computePathPreview(extraBlocked = null) {
+    const blocked = this.blockedForPathing;
+    if (extraBlocked) blocked.add(extraBlocked);
+    return findPathCells(this.grid, blocked);
+  }
+
+  setBuildMode(mode, towerType = null) {
+    this.buildMode = mode;
+    this.selectedTowerType = towerType;
     this.selectedTowerId = null;
   }
 
@@ -45,13 +62,25 @@ export class GameState {
     return this.towers.find((t) => t.id === this.selectedTowerId) || null;
   }
 
+  canEditMap() {
+    return [GAME_PHASE.BUILD, GAME_PHASE.READY].includes(this.phase);
+  }
+
   canPlaceTower(cell) {
-    if (!cell) return false;
-    if (![GAME_PHASE.BUILD, GAME_PHASE.READY].includes(this.phase)) return false;
+    if (!cell || !this.canEditMap()) return false;
+    if (cell.type !== CELL_TYPES.BUILDABLE) return false;
+    if (!this.selectedTowerType) return false;
+    if (this.towers.some((t) => t.cell.x === cell.x && t.cell.y === cell.y)) return false;
+    if (this.money < CONFIG.towers[this.selectedTowerType].cost) return false;
+    return !!this.computePathPreview(keyForCell(cell.x, cell.y));
+  }
+
+  canPlaceBlock(cell) {
+    if (!cell || !this.canEditMap()) return false;
+    if (this.blockTilesLeft <= 0) return false;
     if (cell.type !== CELL_TYPES.BUILDABLE) return false;
     if (this.towers.some((t) => t.cell.x === cell.x && t.cell.y === cell.y)) return false;
-    if (!this.selectedTowerType) return false;
-    return this.money >= CONFIG.towers[this.selectedTowerType].cost;
+    return !!this.computePathPreview(keyForCell(cell.x, cell.y));
   }
 
   placeTower(cell) {
@@ -59,6 +88,17 @@ export class GameState {
     const tower = new Tower(this.selectedTowerType, cell, this.grid.cellSize);
     this.towers.push(tower);
     this.money -= CONFIG.towers[this.selectedTowerType].cost;
+    this.navVersion += 1;
+    this.pathPreview = this.computePathPreview();
+    return true;
+  }
+
+  placeBlock(cell) {
+    if (!this.canPlaceBlock(cell)) return false;
+    setCellType(this.grid, cell, CELL_TYPES.BLOCKED);
+    this.blockTilesLeft -= 1;
+    this.navVersion += 1;
+    this.pathPreview = this.computePathPreview();
     return true;
   }
 
@@ -68,25 +108,38 @@ export class GameState {
   }
 
   startWave() {
-    if (this.phase === GAME_PHASE.GAME_OVER || this.phase === GAME_PHASE.VICTORY) return;
-    if (this.phase === GAME_PHASE.WAVE) return;
+    if (this.phase === GAME_PHASE.WAVE || this.phase === GAME_PHASE.GAME_OVER || this.phase === GAME_PHASE.VICTORY) return;
+    this.pathPreview = this.computePathPreview();
+    if (!this.pathPreview) return;
     const wave = this.waveManager.startNextWave();
     if (!wave) return;
     this.phase = GAME_PHASE.WAVE;
   }
 
   spawnEnemy(type, multipliers) {
-    this.enemies.push(new Enemy(type, this.worldPath, multipliers));
+    const pathCells = this.computePathPreview();
+    if (!pathCells) return;
+    const worldPath = buildWorldPath(pathCells, this.grid);
+    this.enemies.push(new Enemy(type, multipliers, pathCells, worldPath, this.navVersion));
   }
 
   tryUpgradeSelectedTower() {
-    if (![GAME_PHASE.BUILD, GAME_PHASE.READY].includes(this.phase)) return false;
+    if (!this.canEditMap()) return false;
     const tower = this.selectedTower;
     if (!tower || !tower.canUpgrade()) return false;
     if (this.money < tower.upgradeCost) return false;
     this.money -= tower.upgradeCost;
     tower.upgrade();
     return true;
+  }
+
+  updateEnemyPathsIfNeeded() {
+    this.enemies.forEach((enemy) => {
+      if (enemy.navVersion === this.navVersion || enemy.dead || enemy.reachedExit) return;
+      const pathCells = this.computePathPreview();
+      if (!pathCells) return;
+      enemy.setPath(pathCells, buildWorldPath(pathCells, this.grid), this.navVersion);
+    });
   }
 
   update(dt) {
@@ -99,6 +152,8 @@ export class GameState {
       this.waveManager.update(dt, (type, multipliers) => this.spawnEnemy(type, multipliers));
     }
 
+    this.updateEnemyPathsIfNeeded();
+
     this.towers.forEach((tower) => {
       tower.update(dt);
       const target = tower.findTarget(this.enemies, this.grid.cellSize);
@@ -108,7 +163,7 @@ export class GameState {
       }
     });
 
-    this.enemies.forEach((enemy) => enemy.update(dt, this.worldPath));
+    this.enemies.forEach((enemy) => enemy.update(dt));
 
     this.projectiles.forEach((projectile) => {
       projectile.update(dt, this.enemies, this.grid.cellSize);
@@ -141,8 +196,9 @@ export class GameState {
           this.money += CONFIG.gameplay.victoryBonus;
         } else {
           this.phase = GAME_PHASE.BUILD;
-          this.score += 100;
-          this.money += 40;
+          this.blockTilesLeft += CONFIG.gameplay.blockTilesPerWave;
+          this.score += 110;
+          this.money += 45;
         }
       }
     } else if (this.phase === GAME_PHASE.READY) {

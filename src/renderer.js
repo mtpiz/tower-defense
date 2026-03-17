@@ -3,7 +3,7 @@ import { GAME_PHASE } from './gameState.js';
 import { CONFIG } from './config.js';
 
 const drawEnemyShape = (ctx, enemy) => {
-  const s = 10;
+  const s = 9;
   ctx.beginPath();
   if (enemy.shape === 'triangle') {
     ctx.moveTo(enemy.x, enemy.y - s);
@@ -34,20 +34,33 @@ export const render = (ctx, state) => {
       const px = x * grid.cellSize;
       const py = y * grid.cellSize;
 
-      if (cell.type === CELL_TYPES.PATH) ctx.fillStyle = 'rgba(158, 91, 255, 0.24)';
-      else if (cell.type === CELL_TYPES.SPAWN) ctx.fillStyle = 'rgba(127, 255, 58, 0.28)';
-      else if (cell.type === CELL_TYPES.EXIT) ctx.fillStyle = 'rgba(255, 87, 122, 0.28)';
+      if (cell.type === CELL_TYPES.SPAWN) ctx.fillStyle = 'rgba(127, 255, 58, 0.3)';
+      else if (cell.type === CELL_TYPES.EXIT) ctx.fillStyle = 'rgba(255, 87, 122, 0.3)';
+      else if (cell.type === CELL_TYPES.BLOCKED) ctx.fillStyle = 'rgba(95, 34, 140, 0.65)';
       else ctx.fillStyle = 'rgba(20, 35, 55, 0.30)';
-      ctx.fillRect(px, py, grid.cellSize, grid.cellSize);
 
-      ctx.strokeStyle = 'rgba(42, 246, 255, 0.08)';
+      ctx.fillRect(px, py, grid.cellSize, grid.cellSize);
+      ctx.strokeStyle = 'rgba(42, 246, 255, 0.09)';
       ctx.strokeRect(px, py, grid.cellSize, grid.cellSize);
     }
   }
 
-  if (state.hoverCell && state.selectedTowerType) {
+  if (state.pathPreview?.length) {
+    ctx.strokeStyle = 'rgba(127,255,58,0.35)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    state.pathPreview.forEach((cell, idx) => {
+      const px = cell.x * grid.cellSize + grid.cellSize / 2;
+      const py = cell.y * grid.cellSize + grid.cellSize / 2;
+      if (idx === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+  }
+
+  if (state.hoverCell) {
     const c = state.hoverCell;
-    const valid = state.canPlaceTower(c);
+    const valid = state.buildMode === 'block' ? state.canPlaceBlock(c) : state.canPlaceTower(c);
     ctx.fillStyle = valid ? 'rgba(127, 255, 58, 0.22)' : 'rgba(255, 87, 122, 0.22)';
     ctx.fillRect(c.x * grid.cellSize, c.y * grid.cellSize, grid.cellSize, grid.cellSize);
   }
@@ -55,7 +68,7 @@ export const render = (ctx, state) => {
   state.towers.forEach((tower) => {
     const color = CONFIG.towers[tower.type].color;
     const isSelected = state.selectedTowerId === tower.id;
-    const r = tower.type === 'pulse' ? 12 : 14;
+    const r = tower.type === 'pulse' ? 11 : 13;
 
     ctx.shadowBlur = 20;
     ctx.shadowColor = color;
@@ -100,9 +113,9 @@ export const render = (ctx, state) => {
     const hpRatio = Math.max(0, enemy.hp / enemy.maxHp);
     ctx.shadowBlur = 0;
     ctx.fillStyle = 'rgba(255,255,255,0.16)';
-    ctx.fillRect(enemy.x - hpW / 2, enemy.y - 16, hpW, 3);
+    ctx.fillRect(enemy.x - hpW / 2, enemy.y - 15, hpW, 3);
     ctx.fillStyle = '#2af6ff';
-    ctx.fillRect(enemy.x - hpW / 2, enemy.y - 16, hpW * hpRatio, 3);
+    ctx.fillRect(enemy.x - hpW / 2, enemy.y - 15, hpW * hpRatio, 3);
   });
 
   state.projectiles.forEach((p) => {

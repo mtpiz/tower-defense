@@ -40,10 +40,13 @@ canvas.addEventListener('click', (evt) => {
   const cell = getCellAtCanvas(state.grid, pos.x, pos.y);
   if (!cell) return;
 
-  const placed = state.placeTower(cell);
-  if (!placed) {
-    state.selectTowerAtCell(cell);
+  if (state.buildMode === 'block') {
+    if (!state.placeBlock(cell)) state.selectTowerAtCell(cell);
+    return;
   }
+
+  const placed = state.placeTower(cell);
+  if (!placed) state.selectTowerAtCell(cell);
 });
 
 let lastTime = performance.now();
