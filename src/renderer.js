@@ -61,7 +61,7 @@ const drawUpgradeAura = (ctx, tower, radius, color) => {
   ctx.restore();
 };
 
-const drawPulseTower = (ctx, tower, radius, color) => {
+const drawPulseTower = (ctx, tower, radius) => {
   ctx.beginPath();
   ctx.arc(tower.x, tower.y, radius, 0, Math.PI * 2);
   ctx.stroke();
@@ -86,7 +86,7 @@ const drawPulseTower = (ctx, tower, radius, color) => {
   }
 };
 
-const drawNovaTower = (ctx, tower, radius, color) => {
+const drawNovaTower = (ctx, tower, radius) => {
   ctx.beginPath();
   ctx.arc(tower.x, tower.y, radius, 0, Math.PI * 2);
   ctx.stroke();
@@ -114,7 +114,7 @@ const drawNovaTower = (ctx, tower, radius, color) => {
   }
 };
 
-const drawRailTower = (ctx, tower, radius, color) => {
+const drawRailTower = (ctx, tower, radius) => {
   ctx.beginPath();
   ctx.moveTo(tower.x, tower.y - radius);
   ctx.lineTo(tower.x + radius * 0.8, tower.y);
@@ -145,7 +145,7 @@ const drawRailTower = (ctx, tower, radius, color) => {
   }
 };
 
-const drawShardTower = (ctx, tower, radius, color) => {
+const drawShardTower = (ctx, tower, radius) => {
   ctx.beginPath();
   ctx.moveTo(tower.x, tower.y - radius);
   ctx.lineTo(tower.x + radius * 0.95, tower.y + radius * 0.55);
@@ -189,13 +189,13 @@ const drawTower = (ctx, tower, isSelected) => {
   drawUpgradeAura(ctx, tower, radius, color);
 
   if (tower.type === 'pulse') {
-    drawPulseTower(ctx, tower, radius, color);
+    drawPulseTower(ctx, tower, radius);
   } else if (tower.type === 'nova') {
-    drawNovaTower(ctx, tower, radius, color);
+    drawNovaTower(ctx, tower, radius);
   } else if (tower.type === 'rail') {
-    drawRailTower(ctx, tower, radius, color);
+    drawRailTower(ctx, tower, radius);
   } else {
-    drawShardTower(ctx, tower, radius, color);
+    drawShardTower(ctx, tower, radius);
   }
 
   if (tower.level >= 1) {
@@ -225,20 +225,33 @@ export const render = (ctx, state) => {
       const px = x * grid.cellSize;
       const py = y * grid.cellSize;
 
-      if (cell.type === CELL_TYPES.PATH) ctx.fillStyle = 'rgba(158, 91, 255, 0.24)';
-      else if (cell.type === CELL_TYPES.SPAWN) ctx.fillStyle = 'rgba(127, 255, 58, 0.28)';
-      else if (cell.type === CELL_TYPES.EXIT) ctx.fillStyle = 'rgba(255, 87, 122, 0.28)';
+      if (cell.type === CELL_TYPES.SPAWN) ctx.fillStyle = 'rgba(127, 255, 58, 0.3)';
+      else if (cell.type === CELL_TYPES.EXIT) ctx.fillStyle = 'rgba(255, 87, 122, 0.3)';
+      else if (cell.type === CELL_TYPES.BLOCKED) ctx.fillStyle = 'rgba(95, 34, 140, 0.65)';
       else ctx.fillStyle = 'rgba(20, 35, 55, 0.30)';
-      ctx.fillRect(px, py, grid.cellSize, grid.cellSize);
 
-      ctx.strokeStyle = 'rgba(42, 246, 255, 0.08)';
+      ctx.fillRect(px, py, grid.cellSize, grid.cellSize);
+      ctx.strokeStyle = 'rgba(42, 246, 255, 0.09)';
       ctx.strokeRect(px, py, grid.cellSize, grid.cellSize);
     }
   }
 
-  if (state.hoverCell && state.selectedTowerType) {
+  if (state.pathPreview?.length) {
+    ctx.strokeStyle = 'rgba(127,255,58,0.35)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    state.pathPreview.forEach((cell, idx) => {
+      const px = cell.x * grid.cellSize + grid.cellSize / 2;
+      const py = cell.y * grid.cellSize + grid.cellSize / 2;
+      if (idx === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    });
+    ctx.stroke();
+  }
+
+  if (state.hoverCell) {
     const c = state.hoverCell;
-    const valid = state.canPlaceTower(c);
+    const valid = state.buildMode === 'block' ? state.canPlaceBlock(c) : state.canPlaceTower(c);
     ctx.fillStyle = valid ? 'rgba(127, 255, 58, 0.22)' : 'rgba(255, 87, 122, 0.22)';
     ctx.fillRect(c.x * grid.cellSize, c.y * grid.cellSize, grid.cellSize, grid.cellSize);
   }
@@ -269,9 +282,9 @@ export const render = (ctx, state) => {
     const hpRatio = Math.max(0, enemy.hp / enemy.maxHp);
     ctx.shadowBlur = 0;
     ctx.fillStyle = 'rgba(255,255,255,0.16)';
-    ctx.fillRect(enemy.x - hpW / 2, enemy.y - 16, hpW, 3);
+    ctx.fillRect(enemy.x - hpW / 2, enemy.y - 15, hpW, 3);
     ctx.fillStyle = '#2af6ff';
-    ctx.fillRect(enemy.x - hpW / 2, enemy.y - 16, hpW * hpRatio, 3);
+    ctx.fillRect(enemy.x - hpW / 2, enemy.y - 15, hpW * hpRatio, 3);
   });
 
   state.projectiles.forEach((p) => {
@@ -306,7 +319,11 @@ export const render = (ctx, state) => {
     ctx.fillStyle = state.phase === GAME_PHASE.VICTORY ? '#7fff3a' : '#ff577a';
     ctx.font = 'bold 44px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(state.phase === GAME_PHASE.VICTORY ? 'VICTORY' : 'GAME OVER', ctx.canvas.width / 2, ctx.canvas.height / 2);
+    ctx.fillText(
+      state.phase === GAME_PHASE.VICTORY ? 'VICTORY' : 'GAME OVER',
+      ctx.canvas.width / 2,
+      ctx.canvas.height / 2,
+    );
   }
 
   ctx.shadowBlur = 0;
