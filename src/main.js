@@ -1,3 +1,4 @@
+import { AudioController } from './audio.js';
 import { CONFIG } from './config.js';
 import { GameState } from './gameState.js';
 import { getCellAtCanvas } from './grid.js';
@@ -6,6 +7,7 @@ import { UIController } from './ui.js';
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+const audio = new AudioController();
 
 let state = new GameState();
 canvas.width = CONFIG.grid.cols * CONFIG.grid.cellSize;
@@ -16,7 +18,11 @@ const restartGame = () => {
   ui.state = state;
 };
 
-const ui = new UIController(state, canvas, restartGame);
+const ui = new UIController(state, canvas, restartGame, audio);
+
+window.addEventListener('pointerdown', () => {
+  audio.ensureReady();
+}, { passive: true });
 
 const getMouseCanvasPos = (evt) => {
   const rect = canvas.getBoundingClientRect();
@@ -36,6 +42,7 @@ canvas.addEventListener('mouseleave', () => {
 });
 
 canvas.addEventListener('click', (evt) => {
+  audio.ensureReady();
   const pos = getMouseCanvasPos(evt);
   const cell = getCellAtCanvas(state.grid, pos.x, pos.y);
   if (!cell) return;
@@ -53,6 +60,7 @@ const loop = (timestamp) => {
   lastTime = timestamp;
 
   state.update(dt);
+  audio.playEvents(state.consumeAudioEvents());
   ui.update();
   render(ctx, state);
 

@@ -19,7 +19,7 @@ export class Projectile {
     this.explosionRadius = 0;
   }
 
-  update(dt, enemies, gridCellSize) {
+  update(dt, enemies, gridCellSize, emitAudioEvent = () => {}) {
     if (!this.active) return;
 
     const target = enemies.find((e) => e.id === this.targetId && !e.dead && !e.reachedExit);
@@ -36,7 +36,7 @@ export class Projectile {
     if (dist <= step) {
       this.x = target.x;
       this.y = target.y;
-      this.applyImpact(enemies, target, gridCellSize);
+      this.applyImpact(enemies, target, gridCellSize, emitAudioEvent);
       this.active = false;
       return;
     }
@@ -45,7 +45,7 @@ export class Projectile {
     this.y += (dy / dist) * step;
   }
 
-  applyImpact(enemies, target, gridCellSize) {
+  applyImpact(enemies, target, gridCellSize, emitAudioEvent) {
     if (this.towerType === 'nova') {
       const radius = this.splashRadiusCells * gridCellSize;
       const radiusSq = radius * radius;
@@ -54,7 +54,9 @@ export class Projectile {
         const dx = enemy.x - target.x;
         const dy = enemy.y - target.y;
         if ((dx * dx) + (dy * dy) <= radiusSq) {
-          enemy.applyDamage(this.damage);
+          if (enemy.applyDamage(this.damage)) {
+            emitAudioEvent({ type: 'enemy-destroyed', enemyType: enemy.type });
+          }
         }
       });
       this.explosionTtl = CONFIG.projectile.novaExplosionDuration;
@@ -62,6 +64,8 @@ export class Projectile {
       return;
     }
 
-    target.applyDamage(this.damage);
+    if (target.applyDamage(this.damage)) {
+      emitAudioEvent({ type: 'enemy-destroyed', enemyType: target.type });
+    }
   }
 }

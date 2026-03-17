@@ -12,6 +12,8 @@ python3 -m http.server 8080
 
 Open `http://localhost:8080` in a desktop browser.
 
+Audio unlocks on the first button press or click inside the page. Use the `Sound On` / `Sound Off` button in the HUD to mute it.
+
 ## Module structure
 
 - `src/main.js` — bootstrap, canvas loop, wiring input + systems.
@@ -28,6 +30,7 @@ Open `http://localhost:8080` in a desktop browser.
 - `src/ui.js` — HUD controls and tower info/upgrade panel.
 - `styles.css` / `index.html` — app shell and neon UI styles.
 
+- `src/audio.js` - procedural Web Audio laser shots and enemy explosion effects.
 ## Tuning notes
 
 Primary balance knobs are in `src/config.js`:

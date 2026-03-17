@@ -28,6 +28,37 @@ const deterministicWavesValidation = () => {
   );
 };
 
+const progressionValidation = () => {
+  const state = new GameState();
+  assert.deepEqual(
+    state.unlockedTowerTypes,
+    ['pulse', 'nova'],
+    'only the two starter towers should be unlocked at the start',
+  );
+
+  state.waveManager.currentIndex = 1;
+  assert.ok(
+    state.unlockedTowerTypes.includes('rail'),
+    'rail tower should unlock in time for wave 3',
+  );
+
+  state.waveManager.currentIndex = 4;
+  assert.ok(
+    state.unlockedTowerTypes.includes('shard'),
+    'shard tower should unlock in time for wave 6',
+  );
+
+  const wm = new WaveManager();
+  assert.ok(
+    wm.waves[2].sequence.includes('shielded'),
+    'wave 3 should introduce shielded enemies',
+  );
+  assert.ok(
+    wm.waves[5].sequence.includes('swarm'),
+    'wave 6 should introduce swarm enemies',
+  );
+};
+
 const gridValidation = () => {
   const state = new GameState();
   const path = state.grid.path;
@@ -47,6 +78,7 @@ const gridValidation = () => {
 
 placementPhaseValidation();
 deterministicWavesValidation();
+progressionValidation();
 gridValidation();
 
 console.log('All gameplay validation checks passed.');

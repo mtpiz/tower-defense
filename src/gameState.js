@@ -31,14 +31,51 @@ export class GameState {
     this.enemies = [];
     this.projectiles = [];
     this.effects = [];
+    this.audioEvents = [];
     this.selectedTowerType = null;
     this.selectedTowerId = null;
     this.hoverCell = null;
   }
 
+  queueAudioEvent(event) {
+    this.audioEvents.push(event);
+  }
+
+  consumeAudioEvents() {
+    const events = this.audioEvents;
+    this.audioEvents = [];
+    return events;
+  }
+
+  get nextWaveNumber() {
+    return Math.min(CONFIG.gameplay.totalWaves, this.waveManager.currentIndex + 2);
+  }
+
+  isTowerUnlocked(type) {
+    const tower = CONFIG.towers[type];
+    return Boolean(tower) && tower.unlockWave <= this.nextWaveNumber;
+  }
+
+  get unlockedTowerTypes() {
+    return CONFIG.towerOrder.filter((type) => this.isTowerUnlocked(type));
+  }
+
+  get upcomingUnlocks() {
+    const nextWave = this.nextWaveNumber;
+    if (nextWave <= 1) {
+      return [];
+    }
+
+    return CONFIG.towerOrder.filter((type) => CONFIG.towers[type].unlockWave === nextWave);
+  }
+
   setSelectedTowerType(type) {
+    if (type && !this.isTowerUnlocked(type)) {
+      return false;
+    }
     this.selectedTowerType = type;
     this.selectedTowerId = null;
+    return true;
   }
 
   get selectedTower() {
@@ -51,6 +88,7 @@ export class GameState {
     if (cell.type !== CELL_TYPES.BUILDABLE) return false;
     if (this.towers.some((t) => t.cell.x === cell.x && t.cell.y === cell.y)) return false;
     if (!this.selectedTowerType) return false;
+    if (!this.isTowerUnlocked(this.selectedTowerType)) return false;
     return this.money >= CONFIG.towers[this.selectedTowerType].cost;
   }
 
@@ -101,17 +139,25 @@ export class GameState {
 
     this.towers.forEach((tower) => {
       tower.update(dt);
-      const target = tower.findTarget(this.enemies, this.grid.cellSize);
-      if (target && tower.canFire()) {
-        this.projectiles.push(new Projectile(tower, target));
+      const targets = tower.findTargets(this.enemies, this.grid.cellSize);
+      if (targets.length > 0 && tower.canFire()) {
+        targets.slice(0, tower.stats.shotsPerAttack || 1).forEach((target) => {
+          this.projectiles.push(new Projectile(tower, target));
+        });
         tower.onFired();
+        this.queueAudioEvent({ type: 'tower-fired', towerType: tower.type });
       }
     });
 
     this.enemies.forEach((enemy) => enemy.update(dt, this.worldPath));
 
     this.projectiles.forEach((projectile) => {
-      projectile.update(dt, this.enemies, this.grid.cellSize);
+      projectile.update(
+        dt,
+        this.enemies,
+        this.grid.cellSize,
+        (event) => this.queueAudioEvent(event),
+      );
       if (!projectile.active && projectile.explosionTtl > 0) {
         this.effects.push({
           x: projectile.x,
@@ -142,7 +188,7 @@ export class GameState {
         } else {
           this.phase = GAME_PHASE.BUILD;
           this.score += 100;
-          this.money += 40;
+          this.money += CONFIG.gameplay.waveClearBonus;
         }
       }
     } else if (this.phase === GAME_PHASE.READY) {

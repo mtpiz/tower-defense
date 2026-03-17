@@ -1,15 +1,36 @@
 import { CONFIG } from './config.js';
 import { makeRng, shuffleWithRng } from './utils.js';
 
+const getWaveCounts = (waveNumber) => {
+  const counts = {
+    normal: 6 + waveNumber * 3,
+    runner: 8 + waveNumber * 2,
+    shielded: waveNumber >= 3 ? 1 + Math.floor((waveNumber - 3) * 0.7) : 0,
+    tank: waveNumber >= 4 ? Math.floor((waveNumber - 2) * 1.1) : 0,
+    swarm: waveNumber >= 6 ? 3 + (waveNumber - 6) * 2 : 0,
+  };
+
+  counts.normal = Math.max(
+    5,
+    counts.normal - counts.shielded - Math.floor(counts.swarm / 4),
+  );
+  counts.runner = Math.max(
+    5,
+    counts.runner - Math.floor(counts.tank / 2) - Math.floor(counts.swarm / 3),
+  );
+
+  return counts;
+};
+
 const makeWave = (waveNumber) => {
-  const runners = Math.min(8 + waveNumber * 2, 28);
-  const normals = 6 + waveNumber * 3;
-  const tanks = waveNumber >= 4 ? Math.floor((waveNumber - 2) * 1.4) : 0;
+  const counts = getWaveCounts(waveNumber);
 
   const sequence = [];
-  for (let i = 0; i < normals; i += 1) sequence.push('normal');
-  for (let i = 0; i < runners; i += 1) sequence.push('runner');
-  for (let i = 0; i < tanks; i += 1) sequence.push('tank');
+  CONFIG.enemyOrder.forEach((type) => {
+    for (let i = 0; i < counts[type]; i += 1) {
+      sequence.push(type);
+    }
+  });
 
   const rng = makeRng((waveNumber * 7919) ^ 0x9e3779b9);
   shuffleWithRng(sequence, rng);
@@ -20,6 +41,7 @@ const makeWave = (waveNumber) => {
     hpMultiplier: 1 + waveNumber * 0.17,
     speedMultiplier: 1 + waveNumber * 0.03,
     rewardMultiplier: 1 + waveNumber * 0.08,
+    counts,
     sequence,
   };
 };

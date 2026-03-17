@@ -8,8 +8,11 @@ export class Enemy {
     this.id = enemyId;
     enemyId += 1;
     this.type = type;
+    this.name = base.name;
     this.color = base.color;
     this.shape = base.shape;
+    this.size = base.size || 10;
+    this.armor = base.armor || 0;
     this.maxHp = Math.round(base.hp * multipliers.hp);
     this.hp = this.maxHp;
     this.speed = base.speed * multipliers.speed;
@@ -57,9 +60,17 @@ export class Enemy {
   }
 
   applyDamage(amount) {
-    this.hp -= amount;
+    if (this.dead || this.reachedExit) {
+      return false;
+    }
+
+    const appliedDamage = Math.max(1, amount - this.armor);
+    this.hp -= appliedDamage;
     if (this.hp <= 0) {
       this.dead = true;
+      return true;
     }
+
+    return false;
   }
 }

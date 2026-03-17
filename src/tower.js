@@ -39,23 +39,21 @@ export class Tower {
     this.cooldown = Math.max(0, this.cooldown - dt);
   }
 
-  findTarget(enemies, cellSize) {
+  findTargets(enemies, cellSize) {
     const range = this.stats.range * cellSize;
     const rangeSq = range * range;
-    let target = null;
-    let bestProgress = -Infinity;
+    const targetCount = this.stats.targetCount || 1;
+    const candidates = [];
 
     enemies.forEach((enemy) => {
       if (enemy.dead || enemy.reachedExit) return;
       const d2 = dist2(this.x, this.y, enemy.x, enemy.y);
       if (d2 > rangeSq) return;
-      if (enemy.progress > bestProgress) {
-        bestProgress = enemy.progress;
-        target = enemy;
-      }
+      candidates.push(enemy);
     });
 
-    return target;
+    candidates.sort((a, b) => b.progress - a.progress);
+    return candidates.slice(0, targetCount);
   }
 
   canFire() {

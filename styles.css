@@ -15,6 +15,7 @@ body {
   font-family: Inter, Segoe UI, system-ui, sans-serif;
   background: radial-gradient(circle at top, #0c1020 0%, var(--bg) 45%);
   color: var(--text);
+  min-height: 100vh;
 }
 #app {
   max-width: 1180px;
@@ -27,11 +28,15 @@ body {
   border-radius: 10px;
   padding: 10px 14px;
   box-shadow: 0 0 18px rgba(42, 246, 255, 0.16);
+  display: grid;
+  justify-items: center;
 }
 .stats {
   display: flex;
   gap: 18px;
   font-size: 15px;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 .stats strong { color: var(--cyan); }
 .controls {
@@ -39,6 +44,14 @@ body {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+.tower-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 button {
   background: #11172a;
@@ -51,10 +64,31 @@ button {
 button:hover { box-shadow: 0 0 14px rgba(158, 91, 255, 0.5); }
 button.selected { border-color: var(--lime); box-shadow: 0 0 10px rgba(127, 255, 58, 0.6); }
 button:disabled { opacity: 0.45; cursor: not-allowed; }
+.tower-button {
+  min-width: 136px;
+  text-align: left;
+}
+.tower-button small {
+  display: block;
+  margin-top: 4px;
+  color: rgba(232, 247, 255, 0.72);
+  font-size: 11px;
+}
+.tower-button.locked {
+  border-color: rgba(255, 87, 122, 0.45);
+}
 .hidden { display: none; }
 
-main { margin-top: 12px; display: flex; gap: 12px; align-items: flex-start; }
+main {
+  margin-top: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: center;
+  flex-wrap: wrap;
+}
 #gameCanvas {
+  display: block;
   background: #030307;
   border: 1px solid rgba(42, 246, 255, 0.4);
   border-radius: 8px;
@@ -66,9 +100,11 @@ main { margin-top: 12px; display: flex; gap: 12px; align-items: flex-start; }
   border-radius: 8px;
   border: 1px solid rgba(255, 42, 201, 0.6);
   background: rgba(16, 9, 22, 0.8);
+  text-align: center;
 }
 .status {
   margin-top: 8px;
   min-height: 20px;
   color: var(--magenta);
+  text-align: center;
 }
